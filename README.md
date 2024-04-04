@@ -12,7 +12,7 @@ To get started with this project, clone the repository and install the dependenc
 
 ```bash
 git clone git@github.com:ac2-warp/backgammonv.git
-cd backgammonv.git
-npm install
+cd backgammonv
+npm i
 npm run dev
 ```
