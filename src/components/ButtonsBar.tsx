@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { useGamePlay } from "@/hooks/useGamePlay";
 
 export default function ButtonsBar() {
-  const { swopView, resetGame } = useGamePlay();
+  const { swopView, resetGame, devAction } = useGamePlay();
 
   return (
     <div className="w-full flex justify-center gap-2">
@@ -24,6 +24,16 @@ export default function ButtonsBar() {
         }}
       >
         Reset
+      </Button>
+
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => {
+          devAction();
+        }}
+      >
+        Bear Off Setup
       </Button>
     </div>
   );

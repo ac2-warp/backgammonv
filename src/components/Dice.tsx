@@ -1,8 +1,8 @@
 import { PlayerColour, View } from "@/lib/interfaces";
-import { Button } from "./ui/button";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { Badge } from "./ui/badge";
 
 export function DiceButton({
   view,
@@ -28,24 +28,11 @@ function WhiteDiceButton() {
 
   return (
     <div className="m-4 flex flex-col items-center gap-2 min-w-32">
-      <h6>Angie</h6>
-      <Dice3D player="white" />
-
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <span>{`Can bare off: ${white.homeCount}`}</span>
-        <span>{`Bared off: ${white.offCount}`}</span>
-        <span>{`On bar: ${white.barCount}`}</span>
+      <div className="flex gap-1 text-sm text-muted-foreground">
+        <h6>Angie</h6>
+        <Badge variant="secondary">{white.offCount}</Badge>
       </div>
-
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => {
-          devAction();
-        }}
-      >
-        Bear Off Setup
-      </Button>
+      <Dice3D player="white" />
     </div>
   );
 }
@@ -55,14 +42,11 @@ function BlackDiceButton() {
 
   return (
     <div className="m-8 flex flex-col items-center    gap-4">
-      <h6>Alan</h6>
-      <Dice3D player="black" />
-
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <span>{`Can bare off: ${black.homeCount}`}</span>
-        <span>{`Bared off: ${black.offCount}`}</span>
-        <span>{`On bar: ${black.barCount}`}</span>
+      <div className="flex gap-1 text-sm text-muted-foreground">
+        <h6>Alan</h6>
+        <Badge variant="secondary">{black.offCount}</Badge>
       </div>
+      <Dice3D player="black" />
     </div>
   );
 }
