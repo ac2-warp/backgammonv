@@ -1,4 +1,4 @@
-# Backgomman - Angela version
+# Backgammon - Angela version
 
 This game is currently under development, built using Next.js and TailwindCSS. It remains a work in progress, and I plan to add more features over time. The initial goal was to understand the mathematics behind the game better, and ultimately, to create a version that I can enjoy playing with my girlfriend. Given her impressive skills, my ultimate objective is to develop an AI model that can provide a challenging opponent.
 
