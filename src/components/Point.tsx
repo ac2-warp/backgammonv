@@ -1,12 +1,21 @@
 import React from "react";
-import { Checker } from "./Checker";
+import { Checker, CheckerDraggable } from "./Checker";
 import { cn } from "@/lib/utils";
 import { Point } from "@/lib/interfaces";
 import { useGamePlay } from "@/hooks/useGamePlay";
+import { DragEndEvent, useDndMonitor, useDroppable } from "@dnd-kit/core";
 
 export function PointContainer({ point }: { point: Point }) {
-  const { moveChecker, moveCheckerFromBar, selectedBarColour } = useGamePlay();
+  const { moveChecker, moveToBar, selectedBarColour, possibleMoves } =
+    useGamePlay();
   const { pointNumber, possibleMove } = point;
+
+  const droppable = useDroppable({
+    id: pointNumber,
+    data: {
+      point,
+    },
+  });
 
   const isLight = pointNumber % 2 === 0;
 
@@ -30,15 +39,28 @@ export function PointContainer({ point }: { point: Point }) {
   // Generate checker stack
   const checkers = [];
   for (let i = 0; i < point.checkerCount; i++) {
-    checkers.push(<Checker key={i} point={point} index={i + 1} />);
+    if (i === 0 && point.location === "top") {
+      checkers.push(<CheckerDraggable key={i} point={point} index={i + 1} />);
+    } else if (i === point.checkerCount - 1 && point.location === "bottom") {
+      checkers.push(<CheckerDraggable key={i} point={point} index={i + 1} />);
+    } else {
+      checkers.push(<Checker key={i} point={point} index={i + 1} />);
+    }
   }
 
+  useDndMonitor({
+    onDragEnd: (event: DragEndEvent) => {
+      const toPoint: Point = event.over?.data.current?.point as Point;
+      moveChecker(toPoint);
+    },
+  });
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" ref={droppable.setNodeRef}>
       <div
         className={`absolute ${
           point.location === "bottom" ? "-bottom-6" : "-top-6"
-        } flex flex-col-reverse items-center justify-center w-full font-light text-gray-400 text-xs`}
+        } flex flex-col items-center justify-center w-full font-light text-gray-400 text-xs`}
       >
         {pointNumber}
       </div>
@@ -47,7 +69,7 @@ export function PointContainer({ point }: { point: Point }) {
       <div
         onClick={() => {
           if (selectedBarColour) {
-            moveCheckerFromBar(point);
+            moveToBar(point);
           } else {
             moveChecker(point);
           }
@@ -55,15 +77,24 @@ export function PointContainer({ point }: { point: Point }) {
         className={cn(
           "w-0 h-0 border-l-[35px] border-r-[35px] border-l-transparent border-r-transparent",
           triangleDirection,
-          pointColor
+          pointColor,
+          droppable.isOver &&
+            point.location === "top" &&
+            possibleMoves.includes(point.pointNumber) &&
+            "border-t-pink-500 cursor-pointer",
+          droppable.isOver &&
+            point.location === "bottom" &&
+            possibleMoves.includes(point.pointNumber) &&
+            "border-b-pink-500 cursor-pointer"
         )}
       />
 
       {/* Checker Stack */}
       <div
-        className={`absolute ${
+        className={cn(
+          "absolute flex flex-col-reverse items-center",
           point.location === "bottom" ? "bottom-0" : "top-0"
-        } flex flex-col-reverse items-center`}
+        )}
       >
         {checkers}
       </div>

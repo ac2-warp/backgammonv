@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import GamePlayContextProvider from "@/hooks/useGamePlay";
+// import GamePlayContextProvider from "@/hooks/__GamePlayContextProvider";
 import React from "react";
+import GamePlayContextProvider from "@/hooks/useGamePlay";
 
 const inter = Inter({ subsets: ["latin"] });
 

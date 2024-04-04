@@ -1,18 +1,45 @@
+import { useGamePlay } from "@/hooks/useGamePlay";
 import { cn } from "@/lib/utils";
+import { CheckerBeared } from "./Checker";
 
-export default function Holder({ side }: { side: "left" | "right" }) {
+export default function BareOffHolder() {
+  const { white, black, moveBareOff } = useGamePlay();
+
   return (
     <div
       className={cn(
-        "relative flex w-[100px] min-w-[100px] h-[600px] bg-[#007000] border-8 border-[#74452b] shadow-inner shadow-black justify-center",
-        side === "right" && "border-l-0",
-        side === "left" && "border-r-0"
+        "relative flex flex-col w-[100px] min-w-[100px] h-[600px] bg-[#007000] border-8 border-[#74452b] justify-center border-r-0"
       )}
     >
-      <div className="grid grid-cols-2 gap-1 max-h-[300px] ">
-        {/* <CheckerBeared playerColour="white" /> */}
+      <div
+        className={cn(
+          "grid grid-cols-2 h-[295px] bg-[#3aa63a] p-2 z-50",
+          white.canBareOff && "bg-yellow-400 cursor-pointer"
+        )}
+        onClick={() => {
+          moveBareOff();
+        }}
+      >
+        {Array.from({ length: white.offCount }, (_, index) => (
+          <CheckerBeared key={index} playerColour="white" />
+        ))}
       </div>
-      <div className="absolute w-[92px] min-w-[92px] top-[280px] border-8 border-[#74452b]" />
+
+      <div
+        id="holder-divider"
+        className="absolute w-[92px] min-w-[92px] top-[290px] border-4 border-[#74452b]"
+      />
+
+      <div
+        className={cn(
+          "grid grid-cols-2 h-[295px] bg-[#3aa63a] p-2",
+          black.canBareOff && "bg-yellow-400"
+        )}
+      >
+        {Array.from({ length: black.offCount }, (_, index) => (
+          <CheckerBeared key={index} playerColour="black" />
+        ))}
+      </div>
     </div>
   );
 }

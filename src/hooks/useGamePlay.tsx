@@ -9,28 +9,31 @@ import {
 } from "@/lib/moves";
 
 type GamePlayContextType = {
+  loading: boolean;
   view: View;
   points: Point[];
   selectedPoint: Point | null;
   selectedBarColour: PlayerColour | null;
   playerColour: PlayerColour;
   dice: DiceRoll;
-  loading: boolean;
+  possibleMoves: number[];
 
   white: Player;
   black: Player;
 
   swopView: () => void;
   swopPlayer: () => void;
-  roll: () => void;
+  roll: (die1: number, die2: number) => void;
   selectChecker: (pointNumber: number) => void;
   selectPoint: (point: Point) => void;
   moveChecker: (toPoint: Point) => void;
-  moveCheckerFromBar: (toPoint: Point) => void;
+  moveBareOff: () => void;
+  moveToBar: (toPoint: Point) => void;
   resetGame: () => void;
   addToBar: (playerColour: PlayerColour) => void;
   removeFromBar: (playerColour: PlayerColour) => void;
   selectBar: (player: Player) => void;
+  devAction: () => void;
 };
 
 export const GamePlayContext = React.createContext<GamePlayContextType | null>(
@@ -77,7 +80,12 @@ export default function GamePlayContextProvider({
         setPoints(JSON.parse(_blackBoardView));
     }
 
+    // load last dice
+    const _dice = localStorage.getItem("dice");
+    if (_dice) setDice(JSON.parse(_dice));
+
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [white, setWhite] = React.useState<Player>({
@@ -166,6 +174,7 @@ export default function GamePlayContextProvider({
     React.useState<PlayerColour | null>(null);
   const [playerColour, setPlayerColour] = React.useState<PlayerColour>("white");
   const [dice, setDice] = React.useState<DiceRoll>([0, 0]);
+  const [possibleMoves, setPossibleMoves] = React.useState<number[]>([]);
 
   const swopView = () => {
     const currentView = view;
@@ -188,26 +197,43 @@ export default function GamePlayContextProvider({
     setPlayerColour((prev) => (prev === "white" ? "black" : "white"));
   };
 
-  const roll = () => {
-    const die1 = Math.floor(Math.random() * 6) + 1;
-    const die2 = Math.floor(Math.random() * 6) + 1;
-    setDice([die1, die2]);
+  const resetPlayers = () => {
+    setPlayerColour("white");
+    setWhite({
+      colour: "white",
+      barCount: 0,
+      offCount: 0,
+      homeCount: 0,
+    });
+    setBlack({
+      colour: "black",
+      barCount: 0,
+      offCount: 0,
+      homeCount: 0,
+    });
+  };
+
+  const roll = (die1: number, die2: number) => {
     resetPossibleMoves();
     resetSelection();
+    setDice([die1, die2]);
+    calculatePlayerStats();
+    localStorage.setItem("dice", JSON.stringify([die1, die2]));
   };
 
   const resetDice = () => {
     setDice([0, 0]);
+    localStorage.removeItem("dice");
   };
 
   const selectChecker = (pointNumber: number) => {
+    if (dice[0] === 0 && dice[1] === 0) return;
+
     if (selectedPoint?.pointNumber === pointNumber) {
       resetSelection();
       resetPossibleMoves();
       return;
     }
-
-    if (dice[0] === 0 && dice[1] === 0) return;
 
     resetSelection();
 
@@ -230,7 +256,8 @@ export default function GamePlayContextProvider({
     if (view === "WhiteHomeBoard") {
       setSelectedPoint(whiteView[whitePointIndex]);
       calculatePossibleMoves(whiteView[whitePointIndex]);
-    } else {
+    }
+    if (view === "BlackHomeBoard") {
       setSelectedPoint(blackView[blackPointIndex]);
       calculatePossibleMoves(blackView[blackPointIndex]);
     }
@@ -263,9 +290,11 @@ export default function GamePlayContextProvider({
 
     setWhiteBoardView(whiteView);
     setBlackBoardView(blackView);
+
+    setSelectedPoint(null);
   };
 
-  const moveCheckerFromBar = (toPoint: Point) => {
+  const moveToBar = (toPoint: Point) => {
     if (!selectedBarColour) return;
     if (toPoint.checkerCount === 5) return;
     if (!toPoint.possibleMove) return;
@@ -402,6 +431,7 @@ export default function GamePlayContextProvider({
       localStorage.setItem("whiteBoardView", JSON.stringify(whiteView));
       localStorage.setItem("blackBoardView", JSON.stringify(blackView));
 
+      calculatePlayerStats();
       resetPossibleMoves();
       resetSelection();
 
@@ -409,6 +439,117 @@ export default function GamePlayContextProvider({
       if (newDice[0] === 0 && newDice[1] === 0) swopPlayer();
       setDice(newDice);
     }
+  };
+
+  const moveBareOff = () => {
+    if (!selectedPoint) return;
+    if (selectedPoint?.checkerCount === 0) return;
+
+    const whiteView = [...whiteBoardView];
+    const blackView = [...blackBoardView];
+
+    const whiteFromPointIndex = whiteView.findIndex(
+      (point) => point.pointNumber === selectedPoint.pointNumber
+    );
+    const blackFromPointIndex = blackView.findIndex(
+      (point) => point.pointNumber === selectedPoint.pointNumber
+    );
+
+    const checkerCountWhite = whiteView[whiteFromPointIndex].checkerCount - 1;
+    const checkerCountBlack = blackView[blackFromPointIndex].checkerCount - 1;
+
+    // white
+    if (
+      playerColour === "white" &&
+      selectedPoint.occupiedBy?.colour === "white" &&
+      possibleMoves.includes(25)
+    ) {
+      whiteView[whiteFromPointIndex].checkerCount =
+        checkerCountWhite > 0 ? checkerCountWhite : 0;
+      blackView[blackFromPointIndex].checkerCount =
+        checkerCountBlack > 0 ? checkerCountBlack : 0;
+
+      setWhiteBoardView(whiteView);
+      setBlackBoardView(whiteView);
+
+      setWhite((prev) => ({
+        ...prev,
+        offCount: prev.offCount + 1,
+        homeCount: prev.homeCount - 1,
+        canBareOff: false,
+      }));
+
+      localStorage.setItem("whiteBoardView", JSON.stringify(whiteView));
+      localStorage.setItem("blackBoardView", JSON.stringify(blackView));
+      localStorage.setItem("whitePlayer", JSON.stringify(white));
+
+      calculatePlayerStats();
+      resetPossibleMoves();
+      resetSelection();
+    }
+
+    // black
+    if (
+      playerColour === "black" &&
+      selectedPoint.occupiedBy?.colour === "black" &&
+      possibleMoves.includes(0)
+    ) {
+      whiteView[whiteFromPointIndex].checkerCount =
+        checkerCountWhite > 0 ? checkerCountWhite : 0;
+      blackView[blackFromPointIndex].checkerCount =
+        checkerCountBlack > 0 ? checkerCountBlack : 0;
+
+      setWhiteBoardView(whiteView);
+      setBlackBoardView(whiteView);
+
+      setBlack((prev) => ({
+        ...prev,
+        offCount: prev.offCount + 1,
+        homeCount: prev.homeCount - 1,
+        canBareOff: false,
+      }));
+
+      localStorage.setItem("whiteBoardView", JSON.stringify(whiteView));
+      localStorage.setItem("blackBoardView", JSON.stringify(blackView));
+      localStorage.setItem("blackPlayer", JSON.stringify(black));
+
+      calculatePlayerStats();
+      resetPossibleMoves();
+      resetSelection();
+    }
+  };
+
+  const calculatePlayerStats = () => {
+    const whiteView = [...whiteBoardView];
+    const blackView = [...blackBoardView];
+
+    let whiteBearingOffCount: number = 0;
+    let blackBearingOffCount: number = 0;
+
+    whiteView.forEach((point) => {
+      if (
+        point.pointNumber >= 19 &&
+        point.pointNumber <= 24 &&
+        point.checkerCount > 0 &&
+        point.occupiedBy?.colour === "white"
+      ) {
+        whiteBearingOffCount += point.checkerCount;
+      }
+    });
+
+    blackView.forEach((point) => {
+      if (
+        point.pointNumber >= 1 &&
+        point.pointNumber <= 6 &&
+        point.checkerCount > 0 &&
+        point.occupiedBy?.colour === "black"
+      ) {
+        blackBearingOffCount += point.checkerCount;
+      }
+    });
+
+    setWhite((prev) => ({ ...prev, homeCount: whiteBearingOffCount }));
+    setBlack((prev) => ({ ...prev, homeCount: blackBearingOffCount }));
   };
 
   const calculatePossibleMoves = (fromPoint: Point) => {
@@ -482,6 +623,51 @@ export default function GamePlayContextProvider({
       }
     });
 
+    // calculate bearing off
+    if (playerColour === "white" && white.homeCount + white.offCount === 15) {
+      if (
+        toPoint1 === 25 ||
+        toPoint1A === 25 ||
+        toPoint2 === 25 ||
+        toPoint2A === 25
+      ) {
+        whitePossiblePoints.push(25);
+        blackPossiblePoints.push(25);
+        setWhite((prev) => ({
+          ...prev,
+          canBareOff: true,
+        }));
+      } else {
+        setWhite((prev) => ({
+          ...prev,
+          canBareOff: false,
+        }));
+      }
+    }
+    if (playerColour === "black" && black.homeCount + black.offCount === 15) {
+      if (
+        toPoint1 === 0 ||
+        toPoint1A === 0 ||
+        toPoint2 === 0 ||
+        toPoint2A === 0
+      ) {
+        whitePossiblePoints.push(0);
+        blackPossiblePoints.push(0);
+        setBlack((prev) => ({
+          ...prev,
+          canBareOff: true,
+        }));
+      } else {
+        setBlack((prev) => ({
+          ...prev,
+          canBareOff: false,
+        }));
+      }
+    }
+
+    if (playerColour === "white") setPossibleMoves(whitePossiblePoints);
+    if (playerColour === "black") setPossibleMoves(blackPossiblePoints);
+
     setWhiteBoardView(whiteView);
     setBlackBoardView(blackView);
   };
@@ -495,6 +681,7 @@ export default function GamePlayContextProvider({
 
     setWhiteBoardView(whiteView);
     setBlackBoardView(blackView);
+    setPossibleMoves([]);
   };
 
   const addToBar = (playerColor: PlayerColour) => {
@@ -550,22 +737,469 @@ export default function GamePlayContextProvider({
     setPoints(
       view === "WhiteHomeBoard" ? defaultWhiteBoard : defaultBlackBoard
     );
+    resetPlayers();
 
     localStorage.removeItem("player");
     localStorage.removeItem("whiteBoardView");
     localStorage.removeItem("blackBoardView");
   };
 
+  const devAction = () => {
+    const devWhiteBoard: Point[] = [
+      {
+        pointNumber: 12,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 11,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 10,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 9,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 8,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 7,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 6,
+        checkerCount: 2,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 5,
+        checkerCount: 2,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 4,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 3,
+        checkerCount: 5,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 2,
+        checkerCount: 2,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 1,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 13,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 14,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 15,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 16,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 17,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 18,
+        checkerCount: 0,
+        occupiedBy: null,
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 19,
+        checkerCount: 5,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 20,
+        checkerCount: 1,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 21,
+        checkerCount: 3,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 22,
+        checkerCount: 2,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 23,
+        checkerCount: 3,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 24,
+        checkerCount: 1,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+    ];
+    const devBlackBoard: Point[] = [
+      {
+        pointNumber: 24,
+        checkerCount: 1,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 23,
+        checkerCount: 3,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 22,
+        checkerCount: 2,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 21,
+        checkerCount: 3,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 20,
+        checkerCount: 1,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 19,
+        checkerCount: 5,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 18,
+        checkerCount: 0,
+        occupiedBy: null,
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 17,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 16,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 15,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 14,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 13,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "top",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 1,
+        checkerCount: 5,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 2,
+        checkerCount: 5,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 3,
+        checkerCount: 5,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 4,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 5,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 6,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 7,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 8,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 9,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 10,
+        checkerCount: 0,
+        occupiedBy: { colour: "black", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 11,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+      {
+        pointNumber: 12,
+        checkerCount: 0,
+        occupiedBy: { colour: "white", barCount: 0, offCount: 0, homeCount: 0 },
+        location: "bottom",
+        selected: false,
+        possibleMove: false,
+        bareOff: false,
+      },
+    ];
+
+    resetGame();
+    setPoints(devBlackBoard);
+    setWhiteBoardView(devWhiteBoard);
+    setBlackBoardView(devBlackBoard);
+    setView("BlackHomeBoard");
+  };
+
   return (
     <GamePlayContext.Provider
       value={{
+        loading,
         view,
         points,
         selectedPoint,
         selectedBarColour,
         dice,
         playerColour,
-        loading,
+        possibleMoves,
 
         white,
         black,
@@ -577,10 +1211,12 @@ export default function GamePlayContextProvider({
         selectPoint,
         selectBar,
         moveChecker,
-        moveCheckerFromBar,
-        resetGame,
+        moveToBar,
+        moveBareOff,
         addToBar,
         removeFromBar,
+        resetGame,
+        devAction,
       }}
     >
       {children}

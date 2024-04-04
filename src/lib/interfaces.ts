@@ -16,5 +16,6 @@ export interface Player {
   colour: PlayerColour; // player colour
   barCount: number; // on bar
   offCount: number; // bared off
-  homeCount: number; // can bare off
+  homeCount: number; // checkers on home ground
+  canBareOff?: boolean; // can bare off
 }
