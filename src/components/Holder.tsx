@@ -35,6 +35,9 @@ export default function BareOffHolder() {
           "grid grid-cols-2 h-[295px] bg-[#3aa63a] p-2",
           black.canBareOff && "bg-yellow-400"
         )}
+        onClick={() => {
+          moveBareOff();
+        }}
       >
         {Array.from({ length: black.offCount }, (_, index) => (
           <CheckerBeared key={index} playerColour="black" />

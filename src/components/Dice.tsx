@@ -144,6 +144,7 @@ export function Dice3D({ player }: { player: PlayerColour }) {
 
     setShowDiceSide1(showDice(diceOne));
     setShowDiceSide2(showDice(diceTwo));
+
     roll(diceOne, diceTwo);
   };
 

@@ -84,7 +84,14 @@ export default function GamePlayContextProvider({
     const _dice = localStorage.getItem("dice");
     if (_dice) setDice(JSON.parse(_dice));
 
+    // load players
+    const _white = localStorage.getItem("whitePlayer");
+    const _black = localStorage.getItem("blackPlayer");
+    if (_white) setWhite(JSON.parse(_white));
+    if (_black) setBlack(JSON.parse(_black));
+
     setLoading(false);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -472,20 +479,29 @@ export default function GamePlayContextProvider({
       setWhiteBoardView(whiteView);
       setBlackBoardView(whiteView);
 
-      setWhite((prev) => ({
-        ...prev,
-        offCount: prev.offCount + 1,
-        homeCount: prev.homeCount - 1,
-        canBareOff: false,
-      }));
+      setWhite((prev) => {
+        const _white = {
+          ...prev,
+          offCount: prev.offCount + 1,
+          homeCount: prev.homeCount - 1,
+          canBareOff: false,
+        };
+        localStorage.setItem("whitePlayer", JSON.stringify(_white));
+        return _white;
+      });
 
       localStorage.setItem("whiteBoardView", JSON.stringify(whiteView));
       localStorage.setItem("blackBoardView", JSON.stringify(blackView));
-      localStorage.setItem("whitePlayer", JSON.stringify(white));
 
       calculatePlayerStats();
       resetPossibleMoves();
       resetSelection();
+
+      // Calculate points moved - this is used for determining which die to remove
+      let pointsMoved: number = 25 - selectedPoint.pointNumber;
+      const newDice = removeFromDice(pointsMoved, dice);
+      if (newDice[0] === 0 && newDice[1] === 0) swopPlayer();
+      setDice(newDice);
     }
 
     // black
@@ -502,20 +518,29 @@ export default function GamePlayContextProvider({
       setWhiteBoardView(whiteView);
       setBlackBoardView(whiteView);
 
-      setBlack((prev) => ({
-        ...prev,
-        offCount: prev.offCount + 1,
-        homeCount: prev.homeCount - 1,
-        canBareOff: false,
-      }));
+      setBlack((prev) => {
+        const _black = {
+          ...prev,
+          offCount: prev.offCount + 1,
+          homeCount: prev.homeCount - 1,
+          canBareOff: false,
+        };
+        localStorage.setItem("blackPlayer", JSON.stringify(_black));
+        return _black;
+      });
 
       localStorage.setItem("whiteBoardView", JSON.stringify(whiteView));
       localStorage.setItem("blackBoardView", JSON.stringify(blackView));
-      localStorage.setItem("blackPlayer", JSON.stringify(black));
 
       calculatePlayerStats();
       resetPossibleMoves();
       resetSelection();
+
+      // Calculate points moved - this is used for determining which die to remove
+      let pointsMoved: number = selectedPoint.pointNumber;
+      const newDice = removeFromDice(pointsMoved, dice);
+      if (newDice[0] === 0 && newDice[1] === 0) swopPlayer();
+      setDice(newDice);
     }
   };
 
@@ -742,6 +767,9 @@ export default function GamePlayContextProvider({
     localStorage.removeItem("player");
     localStorage.removeItem("whiteBoardView");
     localStorage.removeItem("blackBoardView");
+    localStorage.removeItem("whitePlayer");
+    localStorage.removeItem("blackPlayer");
+    localStorage.removeItem("dice");
   };
 
   const devAction = () => {
