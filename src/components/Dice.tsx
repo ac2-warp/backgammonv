@@ -65,8 +65,12 @@ export function Dice3D({ player }: { player: PlayerColour }) {
     playerColour === player && "bg-[#f25f5c]",
     playerColour === player && "[box-shadow:inset_2px_2px_#d90429]",
     // disabled
-    playerColour !== player && dice[0] === 0 && "bg-[#f3333]",
+    playerColour !== player && "bg-[#f3333]",
     playerColour !== player && "[box-shadow:inset_2px_2px_#cccccc]"
+  );
+
+  const dotDisabled = cn(
+    "absolute w-[10px] h-[10px] -mt-[5px] mr-[2.5px] mb-[2.5px] -ml-[5px] rounded-[10px] bg-[#f3333] [box-shadow:inset_2px_2px_#cccccc]"
   );
 
   const one1 = "top-[50%] left-[50%]";
@@ -109,6 +113,8 @@ export function Dice3D({ player }: { player: PlayerColour }) {
   const show5 = "[transform:rotateX(450deg)_rotateZ(-720deg)]";
   const show6 = "[transform:rotateY(-450deg)_rotateZ(-1440deg)]";
 
+  const empty = "flex items-center justify-center h-[50px] w-full";
+
   const showDice = (side: number) => {
     switch (side) {
       case 1:
@@ -138,12 +144,15 @@ export function Dice3D({ player }: { player: PlayerColour }) {
 
   const rollDice = () => {
     if (player !== playerColour) return; // only roll when current player is passed player
+    if (dice[0] > 0 || dice[1] > 0) return; //
 
     const diceTwo = Math.floor(Math.random() * 6) + 1;
     const diceOne = Math.floor(Math.random() * 6) + 1;
 
     setShowDiceSide1(showDice(diceOne));
     setShowDiceSide2(showDice(diceTwo));
+
+    localStorage.setItem("diceOne", JSON.stringify([diceOne, diceTwo]));
 
     roll(diceOne, diceTwo);
   };
@@ -157,37 +166,117 @@ export function Dice3D({ player }: { player: PlayerColour }) {
             className={cn(diceObject, diceObject1, showDiceSide1)}
           >
             <div id="dice-one-side-one" className={cn(side, side1)}>
-              <div className={cn(dot, one1)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <div className={cn(dot, one1, dice[0] === 0 && dotDisabled)} />
+              )}
             </div>
             <div id="dice-one-side-two" className={cn(side, side2)}>
-              <div className={cn(dot, two1)} />
-              <div className={cn(dot, two2)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, two1, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, two2, dice[0] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-one-side-three" className={cn(side, side3)}>
-              <div className={cn(dot, three1)} />
-              <div className={cn(dot, three2)} />
-              <div className={cn(dot, three3)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, three1, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, three2, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, three3, dice[0] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-one-side-four" className={cn(side, side4)}>
-              <div className={cn(dot, four1)} />
-              <div className={cn(dot, four2)} />
-              <div className={cn(dot, four3)} />
-              <div className={cn(dot, four4)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, four1, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four2, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four3, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four4, dice[0] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-one-side-five" className={cn(side, side5)}>
-              <div className={cn(dot, five1)} />
-              <div className={cn(dot, five2)} />
-              <div className={cn(dot, five3)} />
-              <div className={cn(dot, five4)} />
-              <div className={cn(dot, five5)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, five1, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five2, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five3, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five4, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five5, dice[0] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-one-side-six" className={cn(side, side6)}>
-              <div className={cn(dot, six1)} />
-              <div className={cn(dot, six2)} />
-              <div className={cn(dot, six3)} />
-              <div className={cn(dot, six4)} />
-              <div className={cn(dot, six5)} />
-              <div className={cn(dot, six6)} />
+              {player === playerColour && dice[0] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[0] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, six1, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six2, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six3, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six4, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six5, dice[0] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six6, dice[0] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -197,37 +286,121 @@ export function Dice3D({ player }: { player: PlayerColour }) {
             className={cn(diceObject, diceObject2, showDiceSide2)}
           >
             <div id="dice-two-side-one" className={cn(side, side1)}>
-              <div className={cn(dot, one1)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, one1, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-two-side-two" className={cn(side, side2)}>
-              <div className={cn(dot, two1)} />
-              <div className={cn(dot, two2)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, two1, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, two2, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-two-side-three" className={cn(side, side3)}>
-              <div className={cn(dot, three1)} />
-              <div className={cn(dot, three2)} />
-              <div className={cn(dot, three3)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, three1, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, three2, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, three3, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-two-side-four" className={cn(side, side4)}>
-              <div className={cn(dot, four1)} />
-              <div className={cn(dot, four2)} />
-              <div className={cn(dot, four3)} />
-              <div className={cn(dot, four4)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, four1, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four2, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four3, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, four4, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-two-side-five" className={cn(side, side5)}>
-              <div className={cn(dot, five1)} />
-              <div className={cn(dot, five2)} />
-              <div className={cn(dot, five3)} />
-              <div className={cn(dot, five4)} />
-              <div className={cn(dot, five5)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, five1, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five2, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five3, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five4, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, five5, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
             <div id="dice-two-side-six" className={cn(side, side6)}>
-              <div className={cn(dot, six1)} />
-              <div className={cn(dot, six2)} />
-              <div className={cn(dot, six3)} />
-              <div className={cn(dot, six4)} />
-              <div className={cn(dot, six5)} />
-              <div className={cn(dot, six6)} />
+              {player === playerColour && dice[1] === 0 && (
+                <div className={cn(empty)}>-</div>
+              )}
+              {player === playerColour && dice[1] > 0 && (
+                <>
+                  <div
+                    className={cn(dot, six1, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six2, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six3, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six4, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six5, dice[1] === 0 && dotDisabled)}
+                  />
+                  <div
+                    className={cn(dot, six6, dice[1] === 0 && dotDisabled)}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
