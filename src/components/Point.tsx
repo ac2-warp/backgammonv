@@ -6,8 +6,16 @@ import { useGamePlay } from "@/hooks/useGamePlay";
 import { DragEndEvent, useDndMonitor, useDroppable } from "@dnd-kit/core";
 
 export function PointContainer({ point }: { point: Point }) {
-  const { moveChecker, moveToBar, selectedBarColour, possibleMoves } =
-    useGamePlay();
+  const {
+    moveChecker,
+    moveToBar,
+    selectedBarColour,
+    possibleMoves,
+    whiteBoardView,
+    blackBoardView,
+    uuid,
+    socket,
+  } = useGamePlay();
   const { pointNumber, possibleMove } = point;
 
   const droppable = useDroppable({
@@ -72,6 +80,14 @@ export function PointContainer({ point }: { point: Point }) {
             moveToBar(point);
           } else {
             moveChecker(point);
+
+            if (socket) {
+              socket.emit("move", {
+                senderUuid: uuid,
+                whiteBoardView,
+                blackBoardView,
+              });
+            }
           }
         }}
         className={cn(

@@ -19,3 +19,29 @@ export interface Player {
   homeCount: number; // checkers on home ground
   canBareOff?: boolean; // can bare off
 }
+
+// socket.io
+export interface DiceRollEmit {
+  senderUuid: string | null | undefined;
+  diceOne: number | null | undefined;
+  diceTwo: number | null | undefined;
+}
+
+export interface ChoosePlayerEmit {
+  senderUuid: string | undefined | null;
+  iam: PlayerColour | undefined | null;
+}
+export interface SwopPlayerEmit {
+  senderUuid: string | undefined | null;
+}
+
+export interface MoveEmit {
+  senderUuid: string | undefined | null;
+  whiteBoardView: Point[] | undefined | null;
+  blackBoardView: Point[] | undefined | null;
+}
+
+export interface SelectedCheckerEmit {
+  senderUuid: string | undefined | null;
+  point: number | undefined | null;
+}

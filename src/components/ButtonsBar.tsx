@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { useGamePlay } from "@/hooks/useGamePlay";
 
 export default function ButtonsBar() {
-  const { swopView, resetGame, devAction } = useGamePlay();
+  const { swopView, resetGame, devAction, uuid, socket } = useGamePlay();
 
   return (
     <div className="w-full flex justify-center gap-2">
@@ -21,6 +21,7 @@ export default function ButtonsBar() {
         variant="secondary"
         onClick={() => {
           resetGame();
+          if (socket) socket.emit("reset-game", uuid);
         }}
       >
         Reset

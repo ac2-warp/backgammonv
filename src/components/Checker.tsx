@@ -1,7 +1,9 @@
 import { useGamePlay } from "@/hooks/useGamePlay";
-import { PlayerColour, Point } from "@/lib/interfaces";
+import { PlayerColour, Point, SelectedCheckerEmit } from "@/lib/interfaces";
+import { isMe } from "@/lib/isme";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
+import React from "react";
 
 export function Checker({ point, index }: { point: Point; index: number }) {
   const checkerColor = () => {
@@ -48,8 +50,23 @@ export function CheckerDraggable({
   point: Point;
   index: number;
 }) {
-  const { selectChecker, playerColour, white, black } = useGamePlay();
+  const { selectChecker, playerColour, white, black, uuid, socket } =
+    useGamePlay();
 
+  React.useEffect(() => {
+    if (!socket) return;
+
+    socket.on(
+      "select-checker",
+      ({ senderUuid, point }: SelectedCheckerEmit) => {
+        if (!senderUuid || !point) return;
+        if (senderUuid && isMe(senderUuid)) return;
+        selectChecker(point);
+      }
+    );
+  }, [selectChecker, socket]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: point.pointNumber,
     data: {
@@ -94,6 +111,13 @@ export function CheckerDraggable({
             point.checkerCount > 0
           ) {
             selectChecker(point.pointNumber);
+
+            if (socket) {
+              socket.emit("select-checker", {
+                senderUuid: uuid,
+                point: point.pointNumber,
+              } as SelectedCheckerEmit);
+            }
           }
         }}
         className={cn(

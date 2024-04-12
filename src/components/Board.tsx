@@ -2,7 +2,7 @@
 import ButtonsBar from "./ButtonsBar";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { PointContainer } from "./Point";
-import { DiceButton } from "./Dice";
+import { PlayersScoreBoard } from "./Dice";
 import { ViewBadge } from "./View";
 import Bar from "./Bar";
 import Loading from "./Loading";
@@ -57,7 +57,7 @@ export default function Board() {
         <ViewBadge side="top" view={view} />
 
         <div className="flex items-center justify-center min-w-[1048px] w-[1048px]">
-          <DiceButton side="left" view={view} />
+          <PlayersScoreBoard side="left" view={view} />
 
           <BareOffHolder />
 
@@ -68,7 +68,7 @@ export default function Board() {
             <Bar />
           </div>
 
-          <DiceButton side="right" view={view} />
+          <PlayersScoreBoard side="right" view={view} />
         </div>
 
         <ViewBadge side="bottom" view={view} />

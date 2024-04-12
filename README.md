@@ -15,4 +15,8 @@ git clone git@github.com:ac2-warp/backgammonv.git
 cd backgammonv
 npm i
 npm run dev
+
+cd server
+npm i
+npm run dev
 ```

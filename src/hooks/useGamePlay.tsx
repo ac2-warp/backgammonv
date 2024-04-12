@@ -1,12 +1,25 @@
 "use client";
 import React from "react";
-import { DiceRoll, Player, PlayerColour, Point, View } from "@/lib/interfaces";
+import {
+  ChoosePlayerEmit,
+  DiceRoll,
+  DiceRollEmit,
+  MoveEmit,
+  Player,
+  PlayerColour,
+  Point,
+  SwopPlayerEmit,
+  View,
+} from "@/lib/interfaces";
 import {
   canBeTaken,
   canMoveHere,
   isOccupied,
   removeFromDice,
 } from "@/lib/moves";
+import { v4 as uuidv4 } from "uuid";
+import { io, Socket } from "socket.io-client";
+import { isMe, isMyTurn } from "@/lib/isme";
 
 type GamePlayContextType = {
   loading: boolean;
@@ -20,10 +33,19 @@ type GamePlayContextType = {
 
   white: Player;
   black: Player;
+  whiteBoardView: Point[];
+  blackBoardView: Point[];
+
+  socket: Socket | undefined;
+  uuid: string;
+  iam: PlayerColour | undefined;
+  setIam: React.Dispatch<React.SetStateAction<PlayerColour | undefined>>;
 
   swopView: () => void;
   swopPlayer: () => void;
+  setPlayerColour: React.Dispatch<React.SetStateAction<PlayerColour>>;
   roll: (die1: number, die2: number) => void;
+  setDice: React.Dispatch<React.SetStateAction<DiceRoll>>;
   selectChecker: (pointNumber: number) => void;
   selectPoint: (point: Point) => void;
   moveChecker: (toPoint: Point) => void;
@@ -47,9 +69,30 @@ export default function GamePlayContextProvider({
 }) {
   const [loading, setLoading] = React.useState<boolean>(true);
   const [view, setView] = React.useState<View>("WhiteHomeBoard");
+  const [iam, setIam] = React.useState<PlayerColour>();
+  const [uuid, setUuid] = React.useState<string>("");
+  const [socket, setSocket] = React.useState<Socket>();
 
   // initialize
   React.useEffect(() => {
+    const _socket = io("http://localhost:3001");
+    setSocket(_socket);
+
+    const _uuid = localStorage.getItem("uuid") as string;
+    if (!_uuid) {
+      const _newUuid = uuidv4();
+      setUuid(_newUuid);
+      localStorage.setItem("uuid", _newUuid);
+    } else {
+      setUuid(_uuid);
+    }
+
+    // load active player
+    const _iam = localStorage.getItem("iam") as PlayerColour;
+    if (_iam) {
+      setIam(_iam);
+    }
+
     // load last board view
     const _boardView = localStorage.getItem("boardView") as View;
     if (_boardView) {
@@ -94,6 +137,122 @@ export default function GamePlayContextProvider({
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // socketio
+  React.useEffect(() => {
+    if (!socket) return;
+
+    socket.on("connect", () => {
+      console.log("connected to server");
+    });
+
+    socket.io.on("reconnect", () => {
+      console.log("reconnected to server");
+    });
+
+    socket.on("connect_error", (error) => {
+      if (socket.active) {
+        // temporary failure, the socket will automatically try to reconnect
+        console.debug("Temporary failure. Reconnecting...");
+      } else {
+        // the connection was denied by the server
+        // in that case, `socket.connect()` must be manually called in order to reconnect
+        console.debug(error.message);
+      }
+    });
+
+    // move
+    socket.on(
+      "move",
+      ({ senderUuid, whiteBoardView, blackBoardView }: MoveEmit) => {
+        if (senderUuid && isMe(senderUuid)) return;
+        if (!senderUuid || !whiteBoardView || !blackBoardView) return;
+
+        const boardView = localStorage.getItem("boardView") as View;
+
+        if (boardView === "WhiteHomeBoard") setPoints(whiteBoardView);
+        if (boardView === "BlackHomeBoard") setPoints(blackBoardView);
+
+        setWhiteBoardView(whiteBoardView);
+        setBlackBoardView(blackBoardView);
+      }
+    );
+
+    socket.on("whitePlayer", (whitePlayer: Player) => {
+      setWhite(whitePlayer);
+    });
+
+    socket.on("blackPlayer", (blackPlayer: Player) => {
+      setBlack(blackPlayer);
+    });
+
+    socket.on(
+      "update-dice",
+      ({ senderUuid, diceOne, diceTwo }: DiceRollEmit) => {
+        if (
+          !senderUuid ||
+          diceOne === undefined ||
+          diceTwo === undefined ||
+          diceOne === null ||
+          diceTwo == null
+        )
+          return;
+        if (isMe(senderUuid)) return;
+
+        setDice([diceOne, diceTwo]);
+      }
+    );
+
+    socket.on("choose-player", ({ senderUuid, iam }: ChoosePlayerEmit) => {
+      const _uuid = localStorage.getItem("uuid");
+      if (!senderUuid) return;
+      if (!iam) return;
+      if (!_uuid) return;
+
+      if (senderUuid.toString() !== _uuid.toString() && iam === "white") {
+        setIam("black");
+        localStorage.setItem("iam", "black");
+      } else {
+        setIam("white");
+        localStorage.setItem("iam", "white");
+      }
+    });
+
+    socket.on("swop-player", ({ senderUuid }: SwopPlayerEmit) => {
+      if (senderUuid && isMe(senderUuid)) return;
+      if (!senderUuid) return;
+
+      // swopPlayer();
+    });
+
+    // reset game
+    const _resetGame = () => {
+      resetPossibleMoves();
+      resetSelection();
+      resetDice();
+      resetBar();
+      setWhiteBoardView(defaultWhiteBoard);
+      setBlackBoardView(defaultBlackBoard);
+      setPoints(
+        view === "WhiteHomeBoard" ? defaultWhiteBoard : defaultBlackBoard
+      );
+      resetPlayers();
+
+      localStorage.removeItem("player");
+      localStorage.removeItem("whiteBoardView");
+      localStorage.removeItem("blackBoardView");
+      localStorage.removeItem("whitePlayer");
+      localStorage.removeItem("blackPlayer");
+      localStorage.removeItem("dice");
+    };
+
+    socket.on("reset-game", (senderUuid: string) => {
+      if (isMe(senderUuid)) return;
+
+      _resetGame();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, uuid]);
 
   const [white, setWhite] = React.useState<Player>({
     colour: "white",
@@ -202,7 +361,15 @@ export default function GamePlayContextProvider({
       playerColour === "black" ? "white" : "black"
     );
     setPlayerColour((prev) => (prev === "white" ? "black" : "white"));
+    socket?.emit("swop-player", { senderUuid: uuid } as SwopPlayerEmit);
+
+    console.log(
+      "swopping player to",
+      playerColour === "black" ? "white" : "black"
+    );
   };
+
+  console.log("my turn? -", isMyTurn(playerColour));
 
   const resetPlayers = () => {
     setPlayerColour("white");
@@ -234,7 +401,7 @@ export default function GamePlayContextProvider({
   };
 
   const selectChecker = (pointNumber: number) => {
-    if (dice[0] === 0 && dice[1] === 0) return;
+    // if (dice[0] === 0 && dice[1] === 0) return;
 
     if (selectedPoint?.pointNumber === pointNumber) {
       resetSelection();
@@ -445,6 +612,14 @@ export default function GamePlayContextProvider({
       const newDice = removeFromDice(pointsMoved, dice);
       if (newDice[0] === 0 && newDice[1] === 0) swopPlayer();
       setDice(newDice);
+
+      if (socket) {
+        socket.emit("update-dice", {
+          senderUuid: uuid,
+          diceOne: newDice[0],
+          diceTwo: newDice[1],
+        } as DiceRollEmit);
+      }
     }
   };
 
@@ -1231,10 +1406,19 @@ export default function GamePlayContextProvider({
 
         white,
         black,
+        whiteBoardView,
+        blackBoardView,
+
+        socket,
+        uuid,
+        iam,
+        setIam,
 
         swopView,
         swopPlayer,
+        setPlayerColour,
         roll,
+        setDice,
         selectChecker,
         selectPoint,
         selectBar,

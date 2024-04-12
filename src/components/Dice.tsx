@@ -1,10 +1,16 @@
-import { PlayerColour, View } from "@/lib/interfaces";
+import {
+  ChoosePlayerEmit,
+  DiceRollEmit,
+  PlayerColour,
+  View,
+} from "@/lib/interfaces";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { Badge } from "./ui/badge";
+import { isMe } from "@/lib/isme";
 
-export function DiceButton({
+export function PlayersScoreBoard({
   view,
   side,
 }: {
@@ -14,37 +20,81 @@ export function DiceButton({
   return (
     <div className="m-8 flex flex-col items-center gap-4 w-[100px] min-w-[100px]">
       {/* left */}
-      {view === "WhiteHomeBoard" && side === "left" && <BlackDiceButton />}
-      {view === "BlackHomeBoard" && side === "left" && <WhiteDiceButton />}
+      {view === "WhiteHomeBoard" && side === "left" && (
+        <BlackPlayerScoreBoard />
+      )}
+      {view === "BlackHomeBoard" && side === "left" && (
+        <WhitePlayerScoreBoard />
+      )}
       {/* right */}
-      {view === "WhiteHomeBoard" && side === "right" && <WhiteDiceButton />}
-      {view === "BlackHomeBoard" && side === "right" && <BlackDiceButton />}
+      {view === "WhiteHomeBoard" && side === "right" && (
+        <WhitePlayerScoreBoard />
+      )}
+      {view === "BlackHomeBoard" && side === "right" && (
+        <BlackPlayerScoreBoard />
+      )}
     </div>
   );
 }
 
-function WhiteDiceButton() {
-  const { white, roll, dice, playerColour, devAction } = useGamePlay();
+function WhitePlayerScoreBoard() {
+  const { white, iam, setIam, uuid, socket } = useGamePlay();
 
   return (
     <div className="m-4 flex flex-col items-center gap-2 min-w-32">
       <div className="flex gap-1 text-sm text-muted-foreground">
         <h6>Angie</h6>
-        <Badge variant="secondary">{white.offCount}</Badge>
+        <Badge
+          variant="secondary"
+          className={cn(
+            "hover:cursor-pointer",
+            iam === "white" && "bg-green-500"
+          )}
+          onClick={() => {
+            setIam("white");
+            localStorage.setItem("iam", "white");
+            if (socket) {
+              socket.emit("choose-player", {
+                senderUuid: uuid,
+                iam: "white",
+              } as ChoosePlayerEmit);
+            }
+          }}
+        >
+          {white.offCount}
+        </Badge>
       </div>
       <Dice3D player="white" />
     </div>
   );
 }
 
-function BlackDiceButton() {
-  const { black, roll, dice, playerColour } = useGamePlay();
+function BlackPlayerScoreBoard() {
+  const { black, iam, setIam, uuid, socket } = useGamePlay();
 
   return (
     <div className="m-8 flex flex-col items-center    gap-4">
       <div className="flex gap-1 text-sm text-muted-foreground">
         <h6>Alan</h6>
-        <Badge variant="secondary">{black.offCount}</Badge>
+        <Badge
+          variant="secondary"
+          className={cn(
+            "hover:cursor-pointer",
+            iam === "black" && "bg-green-500"
+          )}
+          onClick={() => {
+            setIam("black");
+            localStorage.setItem("iam", "black");
+            if (socket) {
+              socket.emit("choose-player", {
+                senderUuid: uuid,
+                iam: "black",
+              } as ChoosePlayerEmit);
+            }
+          }}
+        >
+          {black.offCount}
+        </Badge>
       </div>
       <Dice3D player="black" />
     </div>
@@ -52,7 +102,8 @@ function BlackDiceButton() {
 }
 
 export function Dice3D({ player }: { player: PlayerColour }) {
-  const { roll, playerColour, dice } = useGamePlay();
+  const { roll, playerColour, dice, setDice, iam, uuid, socket } =
+    useGamePlay();
 
   const diceObject =
     "relative w-[50px] h-[50px] [transform-style:preserve-3d] [transition:transform_2s]";
@@ -136,29 +187,96 @@ export function Dice3D({ player }: { player: PlayerColour }) {
   };
 
   const [showDiceSide1, setShowDiceSide1] = React.useState<string>(
-    showDice(dice[0])
+    dice[0] === undefined ? "0" : showDice(dice[0])
   );
   const [showDiceSide2, setShowDiceSide2] = React.useState<string>(
-    showDice(dice[1])
+    dice[1] === undefined ? "0" : showDice(dice[1])
   );
 
-  const rollDice = () => {
-    if (player !== playerColour) return; // only roll when current player is passed player
-    if (dice[0] > 0 || dice[1] > 0) return; //
+  const rollDice = (dice1?: number, dice2?: number, noEmit?: boolean) => {
+    if (dice[0] > 0 || dice[1] > 0) return; // don't run if it already contains numbers
 
-    const diceTwo = Math.floor(Math.random() * 6) + 1;
-    const diceOne = Math.floor(Math.random() * 6) + 1;
+    const diceTwo = dice1 || Math.floor(Math.random() * 6) + 1;
+    const diceOne = dice2 || Math.floor(Math.random() * 6) + 1;
+
+    if (
+      uuid &&
+      diceOne &&
+      diceTwo &&
+      diceOne !== dice[0] &&
+      diceTwo !== dice[1] &&
+      socket &&
+      !noEmit
+    ) {
+      socket.emit("roll", {
+        senderUuid: uuid,
+        diceOne,
+        diceTwo,
+      } as DiceRollEmit); // send to other players
+    }
+    if (diceOne && diceTwo) roll(diceOne, diceTwo);
 
     setShowDiceSide1(showDice(diceOne));
     setShowDiceSide2(showDice(diceTwo));
+    setDice([diceOne, diceTwo]);
 
-    localStorage.setItem("diceOne", JSON.stringify([diceOne, diceTwo]));
-
-    roll(diceOne, diceTwo);
+    localStorage.setItem("dice", JSON.stringify([diceOne, diceTwo]));
   };
 
+  // socketio
+  React.useEffect(() => {
+    if (!socket) return;
+
+    const _rollDice = (dice1?: number, dice2?: number, noEmit?: boolean) => {
+      if (dice[0] > 0 || dice[1] > 0) return; // don't run if it already contains numbers
+
+      const diceOne = dice1 || Math.floor(Math.random() * 6) + 1;
+      const diceTwo = dice2 || Math.floor(Math.random() * 6) + 1;
+
+      if (
+        uuid &&
+        diceOne &&
+        diceTwo &&
+        diceOne !== dice[0] &&
+        diceTwo !== dice[1] &&
+        socket &&
+        !noEmit
+      ) {
+        socket.emit("roll", {
+          senderUuid: uuid,
+          diceOne,
+          diceTwo,
+        } as DiceRollEmit); // send to other players
+      }
+      if (diceOne && diceTwo) roll(diceOne, diceTwo);
+
+      setShowDiceSide1(showDice(diceOne));
+      setShowDiceSide2(showDice(diceTwo));
+      setDice([diceOne, diceTwo]);
+
+      localStorage.setItem("dice", JSON.stringify([diceOne, diceTwo]));
+    };
+
+    socket.on("roll", ({ senderUuid, diceOne, diceTwo }: DiceRollEmit) => {
+      if (!senderUuid) return;
+      if (senderUuid && isMe(senderUuid)) return;
+      if ((diceOne === 0 && diceTwo === 0) || !diceOne || !diceTwo) return;
+
+      _rollDice(diceOne, diceTwo, true); // roll dice for other player
+    });
+  }, [dice, roll, setDice, socket, uuid]);
+
   return (
-    <div className="flex flex-col gap-4 items-center" onClick={rollDice}>
+    <div
+      className={cn(
+        "flex flex-col gap-4 items-center",
+        iam !== player && "hover:cursor-wait",
+        iam === player && "hover:cursor-pointer"
+      )}
+      onClick={() => {
+        rollDice();
+      }}
+    >
       <div className="w-[75px] h-[75px] flex">
         <div className="relative inline-block">
           <div
