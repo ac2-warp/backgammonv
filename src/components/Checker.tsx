@@ -1,6 +1,6 @@
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { PlayerColour, Point, SelectedCheckerEmit } from "@/interfaces";
-import { isMe } from "@/lib/isme";
+import { isMe, isMyTurn } from "@/lib/isme";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
 import React from "react";
@@ -102,9 +102,10 @@ export function CheckerDraggable({
       <div
         {...listeners}
         {...attributes}
-        onClick={(e) => {
+        onClick={() => {
           if (playerColour === "white" && white.barCount > 0) return;
           if (playerColour === "black" && black.barCount > 0) return;
+          if (!isMyTurn(playerColour)) return;
 
           if (
             point.occupiedBy?.colour === playerColour &&

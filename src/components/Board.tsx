@@ -1,8 +1,8 @@
 "use client";
-import ButtonsBar from "./ButtonsBar";
+import Menu from "./Menu";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { PointContainer } from "./Point";
-import { PlayersScoreBoard } from "./Dice";
+import { PlayersScoreBoard } from "./Player";
 import { ViewBadge } from "./View";
 import Bar from "./Bar";
 import Loading from "./Loading";
@@ -52,7 +52,7 @@ export default function Board() {
       onDragOver={onDragOver}
     >
       <div className="flex flex-col items-center justify-center min-h-screen h-full gap-2 w-full">
-        <ButtonsBar />
+        <Menu />
 
         <ViewBadge side="top" view={view} />
 

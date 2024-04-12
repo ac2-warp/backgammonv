@@ -1,7 +1,7 @@
 import { Button } from "./ui/button";
 import { useGamePlay } from "@/hooks/useGamePlay";
 
-export default function ButtonsBar() {
+export default function Menu() {
   const { swopView, resetGame, devAction, uuid, socket } = useGamePlay();
 
   return (

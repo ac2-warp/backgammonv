@@ -8,7 +8,7 @@ export function isMe(senderUuid: string) {
 }
 
 export function isMyTurn(playerColour: PlayerColour) {
-  const iam = localStorage.getItem("uuid");
-  if (iam !== playerColour) return false;
-  return true;
+  const iam = localStorage.getItem("iam");
+  if (iam === playerColour) return true;
+  return false;
 }

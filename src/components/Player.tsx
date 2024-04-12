@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { Badge } from "./ui/badge";
 import { isMe } from "@/lib/isme";
+import { IoHourglassOutline } from "react-icons/io5";
+import { LuDices } from "react-icons/lu";
 
 export function PlayersScoreBoard({
   view,
@@ -38,10 +40,21 @@ export function PlayersScoreBoard({
 }
 
 function WhitePlayerScoreBoard() {
-  const { white, iam, setIam, uuid, socket } = useGamePlay();
+  const { white, iam, setIam, uuid, socket, playerColour } = useGamePlay();
 
   return (
     <div className="m-4 flex flex-col items-center gap-2 min-w-32">
+      {playerColour === "white" && iam === "white" && (
+        <Badge variant="default">
+          <LuDices className="w-3 h-3 mr-2" /> Your turn
+        </Badge>
+      )}
+      {playerColour === "white" && iam === "black" && (
+        <Badge variant="secondary">
+          <IoHourglassOutline className="w-3 h-3 mr-2" /> Their turn
+        </Badge>
+      )}
+
       <div className="flex gap-1 text-sm text-muted-foreground">
         <h6>Angie</h6>
         <Badge
@@ -70,12 +83,22 @@ function WhitePlayerScoreBoard() {
 }
 
 function BlackPlayerScoreBoard() {
-  const { black, iam, setIam, uuid, socket } = useGamePlay();
-
+  const { black, iam, setIam, uuid, socket, playerColour } = useGamePlay();
   return (
-    <div className="m-8 flex flex-col items-center    gap-4">
+    <div className="m-8 flex flex-col items-center gap-4">
+      {playerColour === "black" && iam === "black" && (
+        <Badge variant="default">
+          <LuDices className="w-3 h-3 mr-2" /> Your turn
+        </Badge>
+      )}
+      {playerColour === "black" && iam === "white" && (
+        <Badge variant="secondary">
+          <IoHourglassOutline className="w-3 h-3 mr-2" /> Their turn
+        </Badge>
+      )}
+
       <div className="flex gap-1 text-sm text-muted-foreground">
-        <h6>Alan</h6>
+        <h6>{`Alan `}</h6>
         <Badge
           variant="secondary"
           className={cn(

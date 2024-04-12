@@ -369,8 +369,6 @@ export default function GamePlayContextProvider({
     );
   };
 
-  console.log("my turn? -", isMyTurn(playerColour));
-
   const resetPlayers = () => {
     setPlayerColour("white");
     setWhite({
@@ -401,6 +399,7 @@ export default function GamePlayContextProvider({
   };
 
   const selectChecker = (pointNumber: number) => {
+    if (!isMyTurn(playerColour)) return;
     // if (dice[0] === 0 && dice[1] === 0) return;
 
     if (selectedPoint?.pointNumber === pointNumber) {
