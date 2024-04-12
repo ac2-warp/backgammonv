@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/core";
 import React from "react";
 import { CheckerDrag } from "./Checker";
-import { Point } from "@/lib/interfaces";
+import { Point } from "@/interfaces";
 import BareOffHolder from "./Holder";
 export default function Board() {
   const [activeId, setActiveId] = React.useState<string | null>(null);

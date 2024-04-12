@@ -1,7 +1,7 @@
 import React from "react";
 import { Checker, CheckerDraggable } from "./Checker";
 import { cn } from "@/lib/utils";
-import { Point } from "@/lib/interfaces";
+import { Point } from "@/interfaces";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { DragEndEvent, useDndMonitor, useDroppable } from "@dnd-kit/core";
 

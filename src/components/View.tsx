@@ -1,4 +1,4 @@
-import { View } from "@/lib/interfaces";
+import { View } from "@/interfaces";
 import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { useGamePlay } from "@/hooks/useGamePlay";

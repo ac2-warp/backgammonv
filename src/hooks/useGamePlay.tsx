@@ -10,7 +10,7 @@ import {
   Point,
   SwopPlayerEmit,
   View,
-} from "@/lib/interfaces";
+} from "@/interfaces";
 import {
   canBeTaken,
   canMoveHere,

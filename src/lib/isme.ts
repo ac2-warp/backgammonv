@@ -1,4 +1,4 @@
-import { PlayerColour } from "./interfaces";
+import { PlayerColour } from "../interfaces";
 
 export function isMe(senderUuid: string) {
   const uuid = localStorage.getItem("uuid");

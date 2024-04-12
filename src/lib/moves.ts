@@ -1,5 +1,5 @@
 "use client";
-import { DiceRoll, PlayerColour, Point } from "./interfaces";
+import { DiceRoll, PlayerColour, Point } from "../interfaces";
 
 export function isOccupied(
   point: Point,

@@ -3,7 +3,7 @@ import {
   DiceRollEmit,
   PlayerColour,
   View,
-} from "@/lib/interfaces";
+} from "@/interfaces";
 import { useGamePlay } from "@/hooks/useGamePlay";
 import { cn } from "@/lib/utils";
 import React from "react";

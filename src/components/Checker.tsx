@@ -1,5 +1,5 @@
 import { useGamePlay } from "@/hooks/useGamePlay";
-import { PlayerColour, Point, SelectedCheckerEmit } from "@/lib/interfaces";
+import { PlayerColour, Point, SelectedCheckerEmit } from "@/interfaces";
 import { isMe } from "@/lib/isme";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
